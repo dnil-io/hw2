@@ -1,18 +1,23 @@
-// Require the framework and instantiate it
-const fastify = require('fastify')({ logger: true })
+import {openDb, SqlDatabase} from "gtfs";
+import {fastify} from "fastify";
+import {st} from "./routes/stops.js";
+import {routeDefault} from "./routes/defaultRoute.js";
+import {calculate} from "./routes/calculate.js";
 
-// Declare a route
-fastify.get('/', async (request: any, reply:any) => {
-    return { 'daniel.is': 'one.simple.dot' }
-})
+let gtfs: SqlDatabase;
 
-// Run the server!
-const start = async () => {
-    try {
-        await fastify.listen({ port: 3000 })
-    } catch (err) {
-        fastify.log.error(err)
-        process.exit(1)
-    }
+const fast = fastify({logger: true})
+
+fast.get("/", routeDefault);
+fast.get("/stops", st);
+fast.get("/calculate", calculate);
+fast.get("/query/hafas.exe", st);
+
+try {
+    gtfs = await openDb({sqlitePath: "./sqlitedb.sqlite"});
+
+    await fast.listen({port: 3000})
+} catch (err) {
+    fast.log.error(err)
+    process.exit(1)
 }
-start()

@@ -17,6 +17,8 @@
   },
   "dependencies": {
     "fastify": "^4.6.0",
-    "gtfs": "^3.6.0"
+    "gtfs": "^3.6.0",
+    "ngraph.graph": "^20.0.0",
+    "ngraph.todot": "^4.0.0"
   }
 }
