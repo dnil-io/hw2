@@ -9,36 +9,47 @@ import * as ngraphPath from "ngraph.path";
 let graph: Graph;
 
 const setup = async () => {
-    if(graph !== undefined) {
-        graph = createGraph({ multigraph: false });
+    if (graph === undefined) {
+        graph = createGraph({multigraph: false});
         const routes = (await getRoutes());
         const stops = (await getStops(undefined, ["stop_id", "stop_name", "stop_lon", "stop_lat"], undefined, undefined));
 
         for (let route of routes) {
-            if(!route.route_short_name?.startsWith("U") && !route.route_short_name?.startsWith("S")) continue;
-            const trip = (await getTrips({route_id: route.route_id})).at(0);
-            if(trip === undefined) continue;
-            let stopTimes = (await getStoptimes({trip_id: trip.trip_id}));
+            //if (!route.route_short_name?.startsWith("U") && !route.route_short_name?.startsWith("S")) continue;
+            const tripId = await findMostCommonTrip(route.route_id);
+            if (tripId === undefined) continue;
+            let stopTimes = (await getStoptimes({trip_id: tripId}));
 
-            stopTimes = stopTimes.sort((a: any, b: any) => {return (a.stop_sequence as number) - (b.stop_sequence as number)});
+            stopTimes = stopTimes.sort((a: any, b: any) => {
+                return (a.stop_sequence as number) - (b.stop_sequence as number)
+            });
 
             let last: any;
 
             stopTimes.forEach(c => {
                 let stop = stops.find(x => x.stop_id == c.stop_id);
 
-                graph.addNode(trip.trip_id +"|"+c.stop_id, {name: route.route_short_name, stop_id: c.stop_id, label: stop?.stop_name, lat: parseFloat(stop?.stop_lat), lng: parseFloat(stop?.stop_lon)});
+                graph.addNode(tripId + "|" + c.stop_id, {
+                    name: route.route_short_name,
+                    stop_id: c.stop_id,
+                    label: stop?.stop_name,
+                    lat: parseFloat(stop?.stop_lat),
+                    lng: parseFloat(stop?.stop_lon)
+                });
 
 
-                if(last !== undefined) {
+                if (last !== undefined) {
                     //weight:
-                    let timeA = new Date (last.arrival_time);
-                    let timeB = new Date (c.arrival_time);
+                    let timesA = last.arrival_time.split(":");
+                    let timesB = c.arrival_time.split(":");
+
+                    let timeA = new Date(1,1,1,timesA[0], timesA[1]);
+                    let timeB = new Date(1,1,1,timesB[0],timesB[1]);
                     let duration = 1;
-                    duration = timeB.getMilliseconds()-timeA.getMilliseconds(); // 11:14 11:16
+                    duration = timeB.getMilliseconds() - timeA.getMilliseconds(); // 11:14 11:16
                     duration = duration / 60000; //convert to minutes
 
-                    graph.addLink(trip.trip_id + "|"+last.stop_id, trip.trip_id + "|"+c.stop_id, {weight: duration});
+                    graph.addLink(tripId + "|" + last.stop_id, tripId + "|" + c.stop_id, {weight: duration});
                 }
                 last = c;
             });
@@ -50,11 +61,11 @@ const setup = async () => {
 
         graph.forEachNode(node => {
             let nodeStop = node.data.stop_id;
-            for(let transfer of transfers) {
-                if(transfer.from_stop_id === nodeStop) {
+            for (let transfer of transfers) {
+                if (transfer.from_stop_id === nodeStop) {
                     graph.forEachNode(node_b => {
-                        if(node_b.data.stop_id === transfer.to_stop_id && node.id !== node_b.id) {
-                            graph.addLink(node.id, node_b.id, {desc: "TRANSFER"});
+                        if (node_b.data.stop_id === transfer.to_stop_id && node.id !== node_b.id) {
+                            graph.addLink(node.id, node_b.id, {weight: transfer.min_transfer_time});
                         }
                     });
                 }
@@ -70,8 +81,8 @@ const calculateDebug = async (req: FastifyRequest, res: FastifyReply) => {
 };
 
 const calculate = async (req: FastifyRequest, res: FastifyReply) => {
-    const {from, to}  = (req.params as any);
-    
+    const {from, to} = (req.params as any);
+
     const graph = await setup();
 
     const pathFinder = ngraphPath.aStar(graph, {
@@ -81,26 +92,19 @@ const calculate = async (req: FastifyRequest, res: FastifyReply) => {
     });
 
     let fromNode, toNode;
-    
+
     graph.forEachNode(node => {
-        if(node.data.stop_id == from) fromNode = node}
-        );
-
-
-    const path = pathFinder.find(from, to);
-    
-
-    /*let pathFinder = aStar(graph, {
-        // We tell our pathfinder what should it use as a distance function:
-        distance(fromNode, toNode, link) {
-          // We don't really care about from/to nodes in this case,
-          // as link.data has all needed information:
-          return link.data.weight;
+            if (node.data.stop_id === from)
+                fromNode = node;
+            else if (node.data.stop_id === to)
+                toNode = node;
         }
-      });
-      let path = pathFinder.find('a', 'd');*/
+);
+
+
+    const path = pathFinder.find(fromNode.id, toNode.id);
 
     return ;
 };
 
-export { calculate , calculateDebug };
+export {calculate, calculateDebug};
