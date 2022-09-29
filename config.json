@@ -1,7 +1,8 @@
 {
   "agencies": [
     {
-      "url": "https://www.vbb.de/fileadmin/user_upload/VBB/Dokumente/API-Datensaetze/gtfs-mastscharf/GTFS.zip"
+      "url": "https://www.vbb.de/fileadmin/user_upload/VBB/Dokumente/API-Datensaetze/gtfs-mastscharf/GTFS.zip",
+      "exclude": ["shapes", "calendar_dates", "calendar", "levels", "pathways"]
     }
   ],
   "sqlitePath": "sqlitedb.sqlite"
