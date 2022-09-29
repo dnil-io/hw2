@@ -46,7 +46,8 @@ const setup = async () => {
                     let timeB = parseTime(c.arrival_time);
                     let duration = timeB.getTime() - timeA.getTime(); // 11:14 11:16
                     duration = duration / 60000; //convert to minutes
-                    graph.addLink(tripId + "|" + last.stop_id, tripId + "|" + c.stop_id, {weight: duration});
+                    duration = Math.max(1, duration);
+                    graph.addLink(tripId + "|" + last.stop_id, tripId + "|" + c.stop_id, {label: duration, weight: duration});
                 }
                 last = c;
             });
@@ -62,7 +63,8 @@ const setup = async () => {
                 if (transfer.from_stop_id === nodeStop) {
                     graph.forEachNode(node_b => {
                         if (node_b.data.stop_id === transfer.to_stop_id && node.id !== node_b.id) {
-                            graph.addLink(node.id, node_b.id, {weight: (transfer.min_transfer_time / 60) + 15 });
+                            let weight = (transfer.min_transfer_time / 60) + 15;
+                            graph.addLink(node.id, node_b.id, {art: "transfer", label: weight, weight: weight });
                         }
                     });
                 }
@@ -85,7 +87,8 @@ const calculate = async (req: FastifyRequest, res: FastifyReply) => {
     const pathFinder = ngraphPath.aStar(graph, {
         distance(fromNode, toNode, link) {
             return link.data.weight;
-        }
+        },
+        oriented: false
     });
 
     let fromNode, toNode;
@@ -95,8 +98,7 @@ const calculate = async (req: FastifyRequest, res: FastifyReply) => {
                 fromNode = node;
             else if (node.data.stop_id === to)
                 toNode = node;
-        }
-);
+        });
 
 
     const path = pathFinder.find(fromNode.id, toNode.id);
