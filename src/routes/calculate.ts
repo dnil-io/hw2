@@ -5,6 +5,7 @@ import createGraph from "ngraph.graph";
 import * as toGexf from "ngraph.gexf";
 import {Graph} from "ngraph.graph";
 import * as ngraphPath from "ngraph.path";
+import { findMostCommonTrip, isDuringDaytime, parseTime } from "../utils/gtfs.js";
 
 let graph: Graph;
 
@@ -16,6 +17,7 @@ const setup = async () => {
 
         for (let route of routes) {
             //if (!route.route_short_name?.startsWith("U") && !route.route_short_name?.startsWith("S")) continue;
+            if (await (isDuringDaytime(route.route_id)) === false) continue;
             const tripId = await findMostCommonTrip(route.route_id);
             if (tripId === undefined) continue;
             let stopTimes = (await getStoptimes({trip_id: tripId}));
@@ -39,16 +41,11 @@ const setup = async () => {
 
 
                 if (last !== undefined) {
-                    //weight:
-                    let timesA = last.arrival_time.split(":");
-                    let timesB = c.arrival_time.split(":");
-
-                    let timeA = new Date(1,1,1,timesA[0], timesA[1]);
-                    let timeB = new Date(1,1,1,timesB[0],timesB[1]);
-                    let duration = 1;
-                    duration = timeB.getMilliseconds() - timeA.getMilliseconds(); // 11:14 11:16
+                    //weight:                
+                    let timeA = parseTime(last.arrival_time);
+                    let timeB = parseTime(c.arrival_time);
+                    let duration = timeB.getTime() - timeA.getTime(); // 11:14 11:16
                     duration = duration / 60000; //convert to minutes
-
                     graph.addLink(tripId + "|" + last.stop_id, tripId + "|" + c.stop_id, {weight: duration});
                 }
                 last = c;
@@ -65,7 +62,7 @@ const setup = async () => {
                 if (transfer.from_stop_id === nodeStop) {
                     graph.forEachNode(node_b => {
                         if (node_b.data.stop_id === transfer.to_stop_id && node.id !== node_b.id) {
-                            graph.addLink(node.id, node_b.id, {weight: transfer.min_transfer_time});
+                            graph.addLink(node.id, node_b.id, {weight: (transfer.min_transfer_time / 60) + 15 });
                         }
                     });
                 }
@@ -104,7 +101,7 @@ const calculate = async (req: FastifyRequest, res: FastifyReply) => {
 
     const path = pathFinder.find(fromNode.id, toNode.id);
 
-    return ;
+    return path;
 };
 
 export {calculate, calculateDebug};
