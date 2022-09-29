@@ -1,11 +1,11 @@
-import { Console } from "console";
-import {getStops, getStoptimes, getTrips} from "gtfs";
+import {getStoptimes, getTrips} from "gtfs";
+import {Graph} from "ngraph.graph";
 
 export async function findMostCommonTrip(routeId: string): Promise<string | undefined> {
     const trips = (await getTrips({route_id: routeId}));
-    let shapeIds: {[key: string]: number} = {};
-    for (let currentTrip of trips){
-        if(shapeIds[currentTrip.shape_id]) {
+    let shapeIds: { [key: string]: number } = {};
+    for (let currentTrip of trips) {
+        if (shapeIds[currentTrip.shape_id]) {
             shapeIds[currentTrip.shape_id] += 1;
         } else {
             shapeIds[currentTrip.shape_id] = 1
@@ -54,6 +54,72 @@ export async function isDuringDaytime(routeId: string): Promise<boolean> {
 export function parseTime(inputTime: string): Date {
 
     let times = inputTime.split(":");
-    let inputAsDate = new Date(1,1,1, Number.parseInt(times[0]), Number.parseInt(times[1]));
-    return inputAsDate;
+    return new Date(1, 1, 1, Number.parseInt(times[0]), Number.parseInt(times[1]));
+}
+
+export function findMiddleStop(path, graph: Graph) {
+    let middleStop;
+    let middleStopIndex;
+    let dif;
+
+    for (let i = 0; i < path.length; i++) {
+        let difA = weight(0, i, graph, path);
+        let difB = weight(i, path.length-1, graph, path);
+        let currentDif: number = Math.abs(difA - difB);
+        if (dif === undefined || currentDif < dif) {
+            dif = currentDif;
+            middleStop = path[i];
+            middleStopIndex = i;
+            console.log(currentDif + " "+ dif);
+        }
+    }
+
+    let linkArray = links(graph,path);
+
+    return {
+        middleStop: middleStop,
+        indexOfMiddleStop: middleStopIndex,
+        path: path,
+        duration:  weight(0, path.length -1 , graph, path),
+        dif: dif,
+        links: linkArray,
+    };
+}
+
+export function weight(indexA: number, indexB: number, graph: Graph, guide) {
+    if(indexA === indexB) return 0;
+    let weight = 0;
+
+    for (let i = indexA; i < indexB - 1; i++) {
+        let linkA = graph.getLink(guide[i].id, guide[i + 1].id);
+        let linkB = graph.getLink(guide[i + 1].id, guide[i].id);
+
+        let link = linkA ? linkA : linkB;
+        if(!link) {
+            break;
+        }
+        if((i === 0 || i === guide.length - 2) && link.data.art === "transfer") {
+            weight += 0;
+        } else {
+            weight += link.data.weight;
+        }
+    }
+    return weight;
+}
+
+export function links(graph: Graph, guide) {
+    let result: any = [];
+    for (let i = 0; i < guide.length-1; i++) {
+        let linkA = graph.getLink(guide[i].id, guide[i + 1].id);
+        let linkB = graph.getLink(guide[i + 1].id, guide[i].id);
+        let link;
+        if(linkA) link = linkA;
+        if(linkB) link = linkB;
+
+        if((i === 0 || i === guide.length - 2) && link.data.art === "transfer") {
+        } else {
+            result.push(link);
+        }
+    }
+    return result;
 }

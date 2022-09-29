@@ -1,5 +1,5 @@
 import {FastifyReply, FastifyRequest} from "fastify";
-import {getRoutes, getStops, getStoptimes, getTransfers, getTrips} from "gtfs";
+import {getRoutes, getStops, getStoptimes, getTransfers} from "gtfs";
 
 import createGraph from "ngraph.graph";
 import * as toGexf from "ngraph.gexf";
@@ -63,7 +63,7 @@ const setup = async () => {
                 if (transfer.from_stop_id === nodeStop) {
                     graph.forEachNode(node_b => {
                         if (node_b.data.stop_id === transfer.to_stop_id && node.id !== node_b.id) {
-                            let weight = (transfer.min_transfer_time / 60) + 15;
+                            let weight = (transfer.min_transfer_time / 60) + 5;
                             graph.addLink(node.id, node_b.id, {art: "transfer", label: weight, weight: weight });
                         }
                     });
