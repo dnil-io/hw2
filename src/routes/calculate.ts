@@ -16,7 +16,7 @@ const setup = async () => {
         const stops = (await getStops(undefined, ["stop_id", "stop_name", "stop_lon", "stop_lat"], undefined, undefined));
 
         for (let route of routes) {
-            //if (!route.route_short_name?.startsWith("U") && !route.route_short_name?.startsWith("S")) continue;
+            if (!route.route_short_name?.startsWith("U") && !route.route_short_name?.startsWith("S")) continue;
             if (await (isDuringDaytime(route.route_id)) === false) continue;
             const tripId = await findMostCommonTrip(route.route_id);
             if (tripId === undefined) continue;
@@ -84,12 +84,6 @@ const calculate = async (req: FastifyRequest, res: FastifyReply) => {
 
     const graph = await setup();
 
-    const pathFinder = ngraphPath.aStar(graph, {
-        distance(fromNode, toNode, link) {
-            return link.data.weight;
-        },
-        oriented: false
-    });
 
     let fromNode, toNode;
 
@@ -100,6 +94,17 @@ const calculate = async (req: FastifyRequest, res: FastifyReply) => {
                 toNode = node;
         });
 
+        
+    const pathFinder = ngraphPath.aStar(graph, {
+        distance(a, b, link) {
+            if((fromNode === a || toNode === a || fromNode === b || toNode === b) && link.data.art === "transfer") {
+                console.log("replaced start or end destination");
+                return 0;
+            }
+            return link.data.weight;
+        },
+        oriented: false
+    });
 
     const path = pathFinder.find(fromNode.id, toNode.id);
 
