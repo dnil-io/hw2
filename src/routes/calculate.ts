@@ -5,7 +5,7 @@ import createGraph from "ngraph.graph";
 import * as toGexf from "ngraph.gexf";
 import {Graph} from "ngraph.graph";
 import * as ngraphPath from "ngraph.path";
-import { findMostCommonTrip, isDuringDaytime, parseTime } from "../utils/gtfs.js";
+import {findMiddleStop, findMostCommonTrip, isDuringDaytime, parseTime} from "../utils/gtfs.js";
 
 let graph: Graph;
 
@@ -16,8 +16,8 @@ const setup = async () => {
         const stops = (await getStops(undefined, ["stop_id", "stop_name", "stop_lon", "stop_lat"], undefined, undefined));
 
         for (let route of routes) {
-            if (!route.route_short_name?.startsWith("U") && !route.route_short_name?.startsWith("S")) continue;
-            if (await (isDuringDaytime(route.route_id)) === false) continue;
+            //if (!route.route_short_name?.startsWith("U") && !route.route_short_name?.startsWith("S")) continue;
+            if (!await (isDuringDaytime(route.route_id))) continue;
             const tripId = await findMostCommonTrip(route.route_id);
             if (tripId === undefined) continue;
             let stopTimes = (await getStoptimes({trip_id: tripId}));
@@ -80,7 +80,7 @@ const calculateDebug = async (req: FastifyRequest, res: FastifyReply) => {
 };
 
 const calculate = async (req: FastifyRequest, res: FastifyReply) => {
-    const {from, to} = (req.params as any);
+    const {from, to } = (req.params as any);
 
     const graph = await setup();
 
@@ -108,7 +108,7 @@ const calculate = async (req: FastifyRequest, res: FastifyReply) => {
 
     const path = pathFinder.find(fromNode.id, toNode.id);
 
-    return path;
+    return findMiddleStop(path, graph);
 };
 
 export {calculate, calculateDebug};
