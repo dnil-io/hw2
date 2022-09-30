@@ -12,13 +12,13 @@ const stops = async (req: FastifyRequest, res: FastifyReply) => {
     }[] = [];
 
     getGraph().forEachNode(node => {
-        if(!nodes.some(el => el.stop_id === node.data.stop_id)) {
-            nodes.push({stop_id: node.data.stop_id as string, stop_name: undefined});
+        let stop = stops.find(el => el.stop_id === node.data.stop_id);
+        if(!nodes.some(el => el.stop_id === node.data.stop_id) && !nodes.some(el => el.stop_name === stop?.stop_name)) {
+            nodes.push({stop_id: node.data.stop_id as string, stop_name: stop?.stop_name});
         }
     });
 
     for(let node of nodes) {
-        let stop = stops.find(el => el.stop_id === node.stop_id);
         node.stop_name = stop?.stop_name;
     }
 
