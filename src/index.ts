@@ -3,8 +3,11 @@ import {fastify} from "fastify";
 import {st} from "./routes/stops.js";
 import {routeDefault} from "./routes/defaultRoute.js";
 import {calculate, calculateDebug} from "./routes/calculate.js";
+import { createGtfsGraph } from "./utils/graph.js";
+
 
 let gtfs: SqlDatabase;
+
 
 const fast = fastify({logger: true})
 
@@ -14,9 +17,13 @@ fast.get("/calculate/:from/:to", calculate);
 fast.get("/debug/graph", calculateDebug);
 
 try {
+    console.log("loading gtfs file");
     gtfs = await openDb({sqlitePath: "./sqlitedb.sqlite"});
 
+    console.log("creating graph...");
+    await createGtfsGraph();
     await fast.listen({ port: 3001, host: "0.0.0.0"});
+    console.log("started! c:");
 } catch (err) {
     fast.log.error(err)
     process.exit(1)
