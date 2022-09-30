@@ -18,10 +18,6 @@ const stops = async (req: FastifyRequest, res: FastifyReply) => {
         }
     });
 
-    for(let node of nodes) {
-        node.stop_name = stop?.stop_name;
-    }
-
     return nodes;
 };
 
