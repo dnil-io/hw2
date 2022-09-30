@@ -16,13 +16,19 @@ fast.get("/stops", st);
 fast.get("/calculate/:from/:to", calculate);
 fast.get("/debug/graph", calculateDebug);
 
+fast.addHook("preHandler", (req, res, done) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+    done();
+});
+
 try {
     console.log("loading gtfs file");
     gtfs = await openDb({sqlitePath: "./sqlitedb.sqlite"});
 
     console.log("creating graph...");
     await createGtfsGraph();
-    await fast.listen({ port: 3001, host: "0.0.0.0"});
+    await fast.listen({ port: 3001, host: "0.0.0.0" });
     console.log("started! c:");
 } catch (err) {
     fast.log.error(err)
