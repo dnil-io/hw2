@@ -47,7 +47,13 @@ export const createGtfsGraph = async () => {
                     let duration = timeB.getTime() - timeA.getTime(); // 11:14 11:16
                     duration = duration / 60000; //convert to minutes
                     duration = Math.max(1, duration);
-                    graph.addLink(tripId + "|" + last.stop_id, tripId + "|" + c.stop_id, {label: duration, weight: duration});
+                    graph.addLink(tripId + "|" + last.stop_id, tripId + "|" + c.stop_id, 
+                        {   
+                            label: duration, 
+                            weight: duration,
+                            name: route.route_short_name
+                        }
+                    );
                 }
                 last = c;
             });
