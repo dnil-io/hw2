@@ -17,6 +17,7 @@ export const createGtfsGraph = async () => {
 
         for (let route of routes) {
             if (!route.route_short_name?.startsWith("U") && !route.route_short_name?.startsWith("S")) continue;
+            if (route.agency_id != 1 && route.agency_id != 796) continue;
             if (!await (isDuringDaytime(route.route_id))) continue;
             const tripId = await findMostCommonTrip(route.route_id);
             if (tripId === undefined) continue;

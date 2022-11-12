@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start:dev": "nodemon"
+    "start:dev": "nodemon",
+    "build:graph": "BUILD=true node --max_old_space_size=12000 --loader ts-node/esm ./src/index.ts",
+    "calculate": "node --max_old_space_size=12000 --loader ts-node/esm ./src/index.ts"
   },
   "keywords": [],
   "author": "",
@@ -19,9 +21,13 @@
   "dependencies": {
     "fastify": "^4.6.0",
     "gtfs": "^3.6.0",
+    "ngraph.frombinary": "^0.1.0",
+    "ngraph.fromdot": "^7.0.0",
     "ngraph.gexf": "^1.0.0",
     "ngraph.graph": "^20.0.0",
     "ngraph.path": "^1.4.0",
-    "ngraph.todot": "^4.0.0"
+    "ngraph.tobinary": "^1.0.2",
+    "ngraph.todot": "^4.0.0",
+    "redis": "^4.5.0"
   }
 }
