@@ -21,6 +21,7 @@
   "dependencies": {
     "fastify": "^4.6.0",
     "gtfs": "^3.6.0",
+    "json5": "^2.2.1",
     "ngraph.frombinary": "^0.1.0",
     "ngraph.fromdot": "^7.0.0",
     "ngraph.gexf": "^1.0.0",

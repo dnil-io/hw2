@@ -1,6 +1,8 @@
 import { getStoptimes } from "gtfs";
+import { Graph } from "redis";
+import { addWithLink } from "../../utils/graphutils.js";
 
-export async function parseTrip(trip: any) {
+export async function parseTrip(trip: any, graph: Graph) {
     var stoptimes = await getStoptimes({trip_id: trip.trip_id});
 
     stoptimes = stoptimes.sort((a: any, b: any) => {
@@ -17,16 +19,15 @@ export async function parseTrip(trip: any) {
         var edgeData = {
             stop_id: stop.stop_id,
             trip_id: trip.trip_id,
+            sequence: stop.stop_sequence,
         };
         var arrival = {name: `tp#${name}#arrival`, data: {time: stop.arrival_timestamp, type: "tp#arr", ...edgeData}};
         var departure  = {name: `tp#${name}#departure`, data: {time: stop.departure_timestamp, type: "tp#dep", ...edgeData}};
-        links.push({from: arrival.name, to: departure.name, data: {weight: stop.departure_timestamp - stop.arrival_timestamp }});
+        await addWithLink(arrival, departure, {weight: stop.departure_timestamp - stop.arrival_timestamp }, graph);
         if(lastEdge !== undefined) {
             links.push({from: lastEdge.name, to: arrival.name, data: {weight: arrival.data.time - lastEdge.data.time}});
         }
         lastEdge = departure;
-        nodes.push(arrival);
-        nodes.push(departure);
     }
 
     return {nodes: nodes, links: links}
