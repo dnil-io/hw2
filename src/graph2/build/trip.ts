@@ -1,6 +1,7 @@
 import { getStoptimes } from "gtfs";
 import { Graph } from "redis";
 import { addWithLink } from "../../utils/graphutils.js";
+import JSON5 from 'json5'
 
 export async function parseTrip(trip: any, graph: Graph) {
     var stoptimes = await getStoptimes({trip_id: trip.trip_id});
@@ -15,17 +16,16 @@ export async function parseTrip(trip: any, graph: Graph) {
     var links: any = [];
 
     for (let stop of stoptimes) {
-        var name = `${stop.trip_id}#${stop.stop_sequence}`;
         var edgeData = {
             stop_id: stop.stop_id,
             trip_id: trip.trip_id,
             sequence: stop.stop_sequence,
         };
-        var arrival = {name: `tp#${name}#arrival`, data: {time: stop.arrival_timestamp, type: "tp#arr", ...edgeData}};
-        var departure  = {name: `tp#${name}#departure`, data: {time: stop.departure_timestamp, type: "tp#dep", ...edgeData}};
+        var arrival = {name: `TpA`, data: {time: stop.arrival_timestamp, ...edgeData}};
+        var departure  = {name: `TpD`, data: {time: stop.departure_timestamp, ...edgeData}};
         await addWithLink(arrival, departure, {weight: stop.departure_timestamp - stop.arrival_timestamp }, graph);
         if(lastEdge !== undefined) {
-            links.push({from: lastEdge.name, to: arrival.name, data: {weight: arrival.data.time - lastEdge.data.time}});
+            graph.query(`MATCH (a:TpD), (b:TpA) WHERE a.trip_id = '${lastEdge.data.trip_id}' AND a.sequence = ${lastEdge.data.sequence} AND b.trip_id = '${arrival.data.trip_id}' AND b.sequence = ${arrival.data.sequence} CREATE (a)-[r:c ${JSON5.stringify({weight: arrival.data.time - lastEdge.data.time})}]->(b)`);
         }
         lastEdge = departure;
     }
